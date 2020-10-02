@@ -10,8 +10,8 @@
 }
 
 # Read in data
-data <- read.csv("grassdata.csv", h = T)
-
+dataG <- read.csv("grassdata.csv", h = T)
+names(dataG)
 # Get a sense as to the correlations
 # First remove NA, and deselect X, date, logvalue; then calculate correlation matrix
 data_cor <- data %>% na.omit() %>% select(-X, -date, -logvalue) %>% cor()
