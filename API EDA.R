@@ -12,7 +12,7 @@ library(GGally)
 load('countAPI.RData')
 corrplot(data[,-c('date','Conditions','Visibility')])
 data_cor <- data %>% na.omit() %>% select(-date, -Conditions, -Visibility) %>% cor()
-ggcorrplot(data_cor)
+ggcorrplot(data_cor) 
 
 # Histogram of pollen count
 data %>% ggplot(aes(x = value)) +
