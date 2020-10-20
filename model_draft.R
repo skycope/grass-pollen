@@ -9,7 +9,7 @@
   library(gbm)
   library(reshape2)
 }
-
+ 
 setwd("/Users/skycope/Documents/UCT/Stats\ Honours/Project/Data\ and\ code")
 
 # Read in data
