@@ -58,7 +58,7 @@ ggpubr::ggarrange(pollen, vi, ncol = 1)
 
 # In season divisons
 in_season = filter(merged, season == "In season")
-out_season = filter(merged, season == "Not in season" | season == "In season")
+out_season = filter(merged, season == "Not in season")
 
 hist(in_season$value)
 quantile(in_season$value, c(0.2, 0.4, 0.6, 0.8))
