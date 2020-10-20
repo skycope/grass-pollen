@@ -22,7 +22,7 @@ daily_indices = sort(rep(1:nrow(veg_index), 16)) %>% head(.,3368)
 
 daily_veg = veg_index[daily_indices, ]  %>% 
   mutate(date = seq(as.Date('2011-04-23'), as.Date('2020-07-11'), by = 1)
-  ) %>% select(-Date)
+  ) %>% dplyr::select(-Date)
 
 ggplot(veg_index, aes(x = as.Date(Date), y = Mean)) +
   geom_line() +
@@ -30,8 +30,15 @@ ggplot(veg_index, aes(x = as.Date(Date), y = Mean)) +
   xlab("Date") +
   theme_bw()
 
-grassdata$date <- as.Date(grassdata$date )
-merged <- merge(daily_veg, grassdata, by = 'date') 
+grassdata$date <- as.Date(grassdata$date)
+
+merged <- merge(daily_veg, grassdata, by = 'date') %>%
+  mutate(season = case_when(
+  ds > 240 | ds < 30 ~ "In season",
+  ds >= 30 | ds <= 240 ~ "Not in season"
+  ))
+
+hist(grassdata$value, breaks = 50)
 
 pollen <- ggplot(merged, aes(x = as.Date(date))) +
   geom_line(aes(y = value), colour = 'darkblue') +
@@ -49,8 +56,14 @@ vi <- ggplot(merged, aes(x = as.Date(date))) +
 
 ggpubr::ggarrange(pollen, vi, ncol = 1)
 
+# In season divisons
+in_season = filter(merged, season == "In season")
+out_season = filter(merged, season == "Not in season" | season == "In season")
 
-rf_data <- select(merged, -logvalue, -date, -Range) %>%
+hist(in_season$value)
+quantile(in_season$value, c(0.2, 0.4, 0.6, 0.8))
+
+rf_inseason <- dplyr::select(merged, -logvalue, -date, -Range) %>%
   mutate(lag1_value = lag(value, 1),
          lag2_value = lag(value, 1),
          lag3_value = lag(value, 1),
@@ -71,14 +84,13 @@ rf_data <- select(merged, -logvalue, -date, -Range) %>%
     value > 5 & value <= 20 ~ "Moderate",
     value > 20 & value <= 200 ~ "High",
     value > 200 ~ "Very high")
-  ) %>% select(-value_cat) %>% na.omit() 
+  ) %>% dplyr::select(-value_cat, -Conditions) %>% na.omit() 
 
 
-train <- filter(rf_data, fyear != 2011)
-test <- filter(rf_data, fyear == 2011)
+train <- filter(rf_inseason, fyear != 2014)
+test <- filter(rf_inseason, fyear == 2014)
 
-summary(rf_data$fyear)
-rf_grid <- expand.grid(mtry = 10:20,
+rf_grid <- expand.grid(mtry = 5:10,
                        splitrule = 'variance',
                        min.node.size = 5) #Default for regression is 5. Controls tree size.
 ctrl <- trainControl(method = 'oob', verboseIter = T)
@@ -93,47 +105,49 @@ rf_gridsearch <- train(value ~ .,
                        tuneGrid = rf_grid) #Here is the grid
 
 plot(varImp(rf_gridsearch))
-par(mfrow= c(1, 1))
 yhat <- predict(rf_gridsearch, test)
 y = test$value
 
 #confusionMatrix(yhat, as.factor(y))
 
+
 plot(yhat ~ y)
+
 abline(0, 1, col = 'red')
 
 plot(yhat, type = 'l')
 lines(y, col = 'red', type = 'l')
 
-dev.off()
 cor(y, yhat)^2
 
 ### negative scale indicates that theta needs to be estimated
 
-par(mfrow = c(2, 1))
-mg2. <- gam(value ~ fyear +  s(ds, bs = "cc", by = fyear) + s(value.temp_max) + s(value.temp_min) + 
+mg2. <- gam(value ~ s(ds) + s(value.temp_max) + s(value.temp_min) + 
               value.rain + s(value.wind_speed) + value.humid + rain.lag1 + rain.lag2 +
-              s(value.wind_dir, bs = "cc") + s(lag1_value, bs = 'cc') + s(Visibility, bs = 'cc') + 
-              s(lag2_value, bs = 'cc') + s(Dew.Point, bs = 'cc') + s(Mean, bs = 'cc') + wind_dir_bin, family = nb(), data = rf_data, scale = -0.1)
+              s(value.wind_dir) + s(lag1_value) + s(Visibility) + 
+              s(lag2_value) + s(Dew.Point) + s(Mean) + 
+              wind_dir_bin, family = nb(), data = train, scale = -0.1)
 
 (theta.est <- mg2.$family$getTheta(TRUE))
 
 
-mg8 <- gam(value ~ fyear +  s(ds, bs = "cc", by = fyear) + s(value.temp_max) + s(value.temp_min) + 
+mg8 <- gam(value ~ s(ds) + s(value.temp_max) + s(value.temp_min) + 
              value.rain + s(value.wind_speed) + value.humid + rain.lag1 + rain.lag2 +
-             s(value.wind_dir, bs = "cc") + s(lag1_value, bs = 'cc') + s(Visibility, bs = 'cc') + 
-             s(lag2_value, bs = 'cc') + s(Dew.Point, bs = 'cc') + s(Mean, bs = 'cc') + wind_dir_bin, 
-           family = negbin(theta.est), data = rf_data)
+             s(value.wind_dir) + s(lag1_value) + s(Visibility) + 
+             s(lag2_value) + s(Dew.Point) + s(Mean) + 
+             wind_dir_bin, family = negbin(theta.est), data = train)
 
 gam_predict <- exp(predict(mg8, test))
+
 plot(yhat ~ y)
-plot(gam_predict ~ y)
+plot(gam_predict - y, type = 'l')
+mean(gam_predict - y)
 
 cor(gam_predict, y)^2
 
-par(mfrow = c(2, 1))
-plot(gam_predict, type = 'l')
-plot(y, type = 'l')
+
+plot(y, type = 'l', col = 'blue')
+lines(gam_predict)
 
 data.frame(`GAM` = gam_predict, 'Random Forest' = yhat, Actual = y) %>% 
   mutate(x = 1:nrow(.)) %>%
@@ -150,6 +164,7 @@ lines(y, col = 'blue')
 
 plot(yhat, type = 'l', main = "Random Forest")
 lines(y, col = 'blue')
+
 
 ctrl <- trainControl(method = 'cv', number = 10, verboseIter = T)
 gbm_grid <- expand.grid(n.trees = c(300, 500, 1000), # Try these numbers of trees 
