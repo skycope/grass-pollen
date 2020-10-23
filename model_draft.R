@@ -60,8 +60,6 @@ ggpubr::ggarrange(pollen, vi, ncol = 1)
 in_season = filter(merged, season == "In season")
 out_season = filter(merged, season == "Not in season")
 
-hist(in_season$value)
-quantile(in_season$value, c(0.2, 0.4, 0.6, 0.8))
 
 rf_inseason <- dplyr::select(merged, -logvalue, -date, -Range) %>%
   mutate(lag1_value = lag(value, 1),
