@@ -25,8 +25,7 @@ daily_indices = sort(rep(1:nrow(veg_index), 16)) %>% head(.,3368)
 daily_veg = veg_index[daily_indices, ]  %>% 
   mutate(date = seq(as.Date('2011-04-23'), as.Date('2020-07-11'), by = 1)
   ) %>% dplyr::select(-Date)
-grassdata$date <- as.Date(grassdata$date)
-
+grassdata$date = as.Date(grassdata$date)
 
 
 merged <- merge(daily_veg, grassdata, by = 'date') %>%
@@ -46,7 +45,7 @@ merged <- merge(daily_veg, grassdata, by = 'date') %>%
          pollen_count >= 14.8 ~ "Very high"))
 
 # In season divisons
-in_season = filter(merged, season == "In season")
+in_season  = filter(merged, season == "In season")
 out_season = filter(merged, season == "Not in season")
 
 # moving average variables
@@ -62,13 +61,32 @@ gam_data = merged %>%
   na.omit()
 
 
-
 # inseason and outseason
 in_season = filter(gam_data, season == "In season")
 out_season = filter(gam_data, season == "Not in season")
 
-oneday_train = filter(gam_data, fyear != 2014)
-oneday_test = filter(gam_data, fyear == 2014)
+oneday_train = filter(gam_data, fyear != 2011)
+
+par(mfrow = c(2, 4))
+for(i in floor(seq(123, 360, length = 8))){
+oneday_test = filter(gam_data, fyear == 2011, ds == i)
+
+oneday_predict = exp(predict(model_2, newdata = oneday_test))
+oneday_dist = MASS::rnegbin(1000, mu = oneday_predict, theta = exp(theta_est))
+
+predict_cat_1 = case_when(
+  oneday_dist < 1 ~ "Very low",
+  oneday_dist >= 1 & oneday_dist < 3 ~ "Low",
+  oneday_dist >= 3 & oneday_dist < 8 ~ "Moderate",
+  oneday_dist >= 8 & oneday_dist < 14.8 ~ "High",
+  oneday_dist >= 14.8 ~ "Very high") %>%
+  ordered(., levels = c("Very low", "Low", "Moderate", "High", "Very high"))
+
+plot(predict_cat_1, main = paste("Actual: ", oneday_test$pollen_cat))
+}
+
+oneday_test
+
 
 plot(oneday_test$max_temp, type = 'l')
 lines(oneday_test$rollmean_maxtemp, col = 'red')
@@ -91,37 +109,69 @@ model_2 = gam(pollen_count ~ s(rollmean_pollen, bs = 'cc') + s(rollmean_maxtemp,
 
 AIC(model_1, model_2)
 
-oneday_predict = exp(predict(model_2, newdata = oneday_test))
-
-predict_cat = case_when(
-  oneday_predict < 1 ~ "Very low",
-  oneday_predict >= 1 & oneday_predict < 3 ~ "Low",
-  oneday_predict >= 3 & oneday_predict < 8 ~ "Moderate",
-  oneday_predict >= 8 & oneday_predict < 14.8 ~ "High",
-  oneday_predict >= 14.8 ~ "Very high") %>%
-  ordered(., levels = c("Very low", "Low", "Moderate", "High", "Very high"))
-
-plot(predict_cat)
-
-observed = oneday_test$pollen_count
-observed_cat = oneday_test$pollen_cat %>% 
-  ordered(., levels = c("Very low", "Low", "Moderate", "High", "Very high"))
-
-confusionMatrix(observed_cat, predict_cat)
-
 summary(model_2)
+
+
 # two day ahead forecasts
-oneday_test$pollen_count
+twoday_predict = c()
+for(i in 1:length(oneday_dist)){
+  
+  twoday_test = oneday_test %>% 
+    mutate(rollmean_pollen = 
+             (oneday_dist[i] +
+                6*rollmean_pollen)/7)
+  
+  twoday_predict[i] = exp(predict(model_2, newdata = twoday_test))
+  }
 
-twoday_test = oneday_test %>% 
-  mutate(oneday_predict = oneday_predict) %>%
-  mutate(rollmean_pollen = 
-           (oneday_predict +
-                 6*lag(rollmean(pollen_count, 6, fill = NA, align = "right"), 2)) / 7)
+twoday_dist = matrix(nrow = 1000, ncol = 100)
+
+for(i in 1:1000){
+  twoday_dist[i, ] = MASS::rnegbin(100, mu = twoday_predict[i], theta = exp(theta_est))
+}
+
+hist(twoday_dist)
+twoday_dist = rowMeans(twoday_dist)
 
 
-twoday_predict = exp(predict(model_2, newdata = twoday_test))
+predict_cat_2 = case_when(
+  twoday_dist < 1 ~ "Very low",
+  twoday_dist >= 1 & twoday_dist < 3 ~ "Low",
+  twoday_dist >= 3 & twoday_dist < 8 ~ "Moderate",
+  twoday_dist >= 8 & twoday_dist < 14.8 ~ "High",
+  twoday_dist >= 14.8 ~ "Very high") %>%
+  ordered(., levels = c("Very low", "Low", "Moderate", "High", "Very high"))
 
+
+for(i in 1:length(twoday_dist)){
+  
+  threeday_test = oneday_test %>% 
+    mutate(rollmean_pollen = 
+             (twoday_dist[i] + oneday_dist[i] +
+                5*rollmean_pollen)/7)
+  
+  threeday_predict[i] = exp(predict(model_2, newdata = threeday_test))
+}
+
+threeday_dist = matrix(nrow = 1000, ncol = 1)
+
+for(i in 1:1000){
+  threeday_dist[i, ] = MASS::rnegbin(1, mu = threeday_predict[i], theta = exp(theta_est))
+}
+
+threeday_dist = rowMeans(threeday_dist)
+
+hist(threeday_dist)
+
+predict_cat_3 = case_when(
+  threeday_dist < 1 ~ "Very low",
+  threeday_dist >= 1 & threeday_dist < 3 ~ "Low",
+  threeday_dist >= 3 & threeday_dist < 8 ~ "Moderate",
+  threeday_dist >= 8 & threeday_dist < 14.8 ~ "High",
+  threeday_dist >= 14.8 ~ "Very high") %>%
+  ordered(., levels = c("Very low", "Low", "Moderate", "High", "Very high"))
+
+plot(predict_cat_3)
 
 threeday_test = twoday_test %>% 
   mutate(twoday_predict = twoday_predict) %>%

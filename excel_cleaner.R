@@ -5,7 +5,6 @@ library(readxl)
 library(tidyverse)
 
 setwd("/Users/skycope/Documents/UCT/Stats\ Honours/Project/Data\ and\ code")
-setwd("/Users/chloestipinovich/Documents/2020/Thesis Project/grass-pollen/Fw__grass_pollen_data_since_2015")
 
 
 # Between 2019-11-04 and 2019-11-24 the machine wasn't working
@@ -29,7 +28,7 @@ file2 = read_xls("Cape Town mar-sept 2019.xls", sheet = 4, skip = 2) %>%
   mutate(pollen_count = as.numeric(X1) + as.numeric(X2) + as.numeric(X3) + as.numeric(X4)) %>%
   select(pollen_count) %>%
   mutate(date = seq(as.Date("2019-03-12"), as.Date("2019-09-09"), by = 1))
-file2  = file2[1:153,]
+
 
 # Unusable I think -- every observation is 0 
 #file3 = read_excel("SAAO July 2017- jan 2018.xlsx", sheet = 4, skip = 2) %>% 
@@ -52,7 +51,6 @@ file4 = read_xls("SAAO-sep2018-mar2019.xls", sheet = 4, skip = 2) %>%
 
 # Merge files together
 merged = rbind(file1, file2, file4)
-merged = merged[order(merged$date),]
 
 # Read in new data
 old_data = read.csv("grassdata.csv", h = T) %>% 
@@ -62,6 +60,7 @@ old_data = read.csv("grassdata.csv", h = T) %>%
 
 # Merge all into one file
 new_data = rbind(merged, old_data)
+summ
 
 ggplot(new_data, aes(x = date, y = pollen_count)) +
   geom_line() +
@@ -69,4 +68,6 @@ ggplot(new_data, aes(x = date, y = pollen_count)) +
 
 
 write.csv(new_data, "all_counts.csv")
+dev.off()
+plot(totalCombinedNoNAs$date, totalCombinedNoNAs$Minimum.Temperature, type = 'l')
 
