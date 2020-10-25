@@ -50,7 +50,7 @@ file4 = read_xls("SAAO-sep2018-mar2019.xls", sheet = 4, skip = 2) %>%
   mutate(date = seq(as.Date("2018-09-11"), as.Date("2019-03-11"), by = 1))
 
 # Merge files together
-merged = rbind(file1, file2, file4)
+merged = rbind(file4, file2, file1)
 
 # Read in new data
 old_data = read.csv("grassdata.csv", h = T) %>% 
@@ -59,8 +59,7 @@ old_data = read.csv("grassdata.csv", h = T) %>%
 
 
 # Merge all into one file
-new_data = rbind(merged, old_data)
-summ
+new_data = rbind(old_data,merged)
 
 ggplot(new_data, aes(x = date, y = pollen_count)) +
   geom_line() +
@@ -69,5 +68,5 @@ ggplot(new_data, aes(x = date, y = pollen_count)) +
 
 write.csv(new_data, "all_counts.csv")
 dev.off()
-plot(totalCombinedNoNAs$date, totalCombinedNoNAs$Minimum.Temperature, type = 'l')
+# plot(totalCombinedNoNAs$date, totalCombinedNoNAs$Minimum.Temperature, type = 'l')
 
