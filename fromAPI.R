@@ -116,7 +116,7 @@ dataHist$Date.time  = as.Date(dataHist$Date.time, format = "%m/%d/%Y") # Convert
 dataHist$Conditions = as.factor(dataHist$Conditions) # Create a conditions factor with 6 levels
 str(dataHist)
 
-# Find missing values and chnage date heading
+# Find missing values and change date heading
 
 sum(is.na(dataHist)) # Missing Values
 names(dataHist)[1] = "date"
@@ -257,7 +257,7 @@ h8               = read.csv(URL)
 
 newWeather       = rbind(h1,h2,h3,h4,h5,h6,h7,h8)
 newWeather       = newWeather[, histColNames]
-newWeather       = newWeather[1:517,]
+# newWeather       = newWeather[1:517,]
 
 str(newWeather) # Checking data is in the correct format
 newWeather$Date.time  = as.Date(newWeather$Date.time, format = "%m/%d/%Y") # Convert date chr to Date objects
@@ -275,7 +275,7 @@ dataGrass$date   = as.Date(dataGrass$date)
 names(dataGrass)[2] = "value"
 count            = dataGrass[dataGrass$date > newWeather$date[1]-1 ,c('date','value')] # over the correct period
 count            = count[dataGrass$date < newWeather$date[nrow(newWeather)]+1,]
-count            = count[1:517,]
+count            = count[1:546,]
 
 # Add count value to data
 setDT(newWeather)
@@ -283,7 +283,8 @@ setDT(count)
 newCombined = newWeather[count, on = 'date']
 
 save(newCombined, file="CountAPI_2.RData")
-
+load("CountAPI_2.RData")
+newCombined
 
 # save.image('countAPI.RData') #Save objects so we don't have to rerun forests
 # rm(list = ls())
