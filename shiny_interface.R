@@ -116,5 +116,5 @@ server <- function(input, output) {
 
 
 shinyApp(ui, server)
- shinyApp(ui, server)
 
+ifelse(runif(1) <= 0.02, "Trump", "Biden")
