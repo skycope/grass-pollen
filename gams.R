@@ -1,6 +1,9 @@
 library(mgcv)
 library(visreg)
 
+Lmin <- expression("minimum temperature ("~degree~C~")")
+Lmax <- expression("maximum temperature ("~degree~C~")")
+
 setwd("/Users/skycope/Documents/UCT/Stats\ Honours/Project/Data\ and\ code")
 
 dm <- read.csv("grassdata.csv", header = T)

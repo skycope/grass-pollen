@@ -54,9 +54,11 @@ train = read.csv("Final_Data/train.csv", h = T)
 validation = read.csv("Final_Data/validation.csv", h = T)
 test = read.csv("Final_Data/test.csv", h = T)
 
-models_RMSE           = matrix(NA, nrow = 5, ncol = 3)
-models_accuracy       = matrix(NA, ncol = 4, nrow = 5)
-colnames(models_RMSE) = c("Total", "In Season", "Out of Season")
+models_RMSE               = matrix(NA, nrow = 5, ncol = 3)
+models_accuracy           = matrix(NA, ncol = 4, nrow = 5)
+colnames(models_RMSE)     = c("Total", "In Season", "Out of Season")
+colnames(models_accuracy) = c("Regression to categories", "Total categories", "In Season categories","Out of Season categories")
+
 
 # testYear = 2014
 
@@ -81,6 +83,8 @@ colnames(models_RMSE) = c("Total", "In Season", "Out of Season")
                          trControl = ctrl,
                          tuneGrid = rf_grid) #Here is the grid
 }
+
+saveRDS(M1_reg, "RF_models/M1_reg.rds")
 
 plot(varImp(M1_reg))
 (varImportance = varImp(M1_reg))
@@ -166,6 +170,7 @@ M1_class = train(pollen_cat ~ .,
                       importance = 'impurity',
                       trControl = ctrl,
                       tuneGrid = rf_grid) #Here is the grid
+saveRDS(M1_class, "RF_models/M1_class.rds")
 
 plot(varImp(M1_class))
 (varImportance = varImp(M1_class))
@@ -216,6 +221,8 @@ CM1.2Out = confusionMatrix(yOut, yhatOut)
                          trControl = ctrl,
                          tuneGrid = rf_grid) #Here is the grid
 }
+saveRDS(M2_reg, "RF_models/M2_reg.rds")
+
 plot(varImp(M2_reg))
 (varImportance = varImp(M2_reg))
 par(mfrow = c(1, 1))
@@ -294,6 +301,7 @@ M2_class = train(pollen_cat ~ .,
                  importance = 'impurity',
                  trControl = ctrl,
                  tuneGrid = rf_grid) #Here is the grid
+saveRDS(M2_class, "RF_models/M2_class.rds")
 
 plot(varImp(M2_class))
 (varImportance = varImp(M2_class))
@@ -346,6 +354,8 @@ CM2.2Out = confusionMatrix(yOut, yhatOut)
                          trControl = ctrl,
                          tuneGrid = rf_grid) #Here is the grid
 }
+saveRDS(M3_reg, "RF_models/M3_reg.rds")
+
 
 validation_lags <- dplyr::select(validation, -logvalue) %>%
   mutate(count_lag1 = lag(pollen_count, 1),
@@ -440,6 +450,8 @@ CM3 = confusionMatrix(yCat$cat, yhatCat$cat)
                   trControl = ctrl,
                   tuneGrid = rf_grid) #Here is the grid
 }
+saveRDS(M3_class, "RF_models/M3_class.rds")
+
 
 validation_lags <- dplyr::select(validation, -logvalue) %>%
   mutate(cat_lag1 = lag(pollen_cat, 1),
@@ -515,6 +527,9 @@ CM3.2Out = confusionMatrix(yOut, yhatOut)
                          trControl = ctrl,
                          tuneGrid = rf_grid) #Here is the grid
 }
+saveRDS(M4_reg, "RF_models/M4_reg.rds")
+
+
 
 validation_lags <- dplyr::select(validation, -logvalue) %>%
   mutate(count_lag1 = lag(pollen_count, 1),
@@ -646,6 +661,9 @@ CM4 = confusionMatrix(yCat$cat, yhatCat$cat)
                     trControl = ctrl,
                     tuneGrid = rf_grid) #Here is the grid
 }
+saveRDS(M4_class, "RF_models/M4_class.rds")
+
+
 
 validation_lags <- dplyr::select(validation, -logvalue) %>%
   mutate(cat_lag1 = lag(pollen_cat, 1),
@@ -772,12 +790,13 @@ CM4.2Out = confusionMatrix(yOut, yhatOut)
   #                         write.forest = T, 
   #                         min.node.size = rf_gridsearch$bestTune[,3], 
   #                         probability = T)
-  library(randomForest)
+  
   rf = randomForest(value~., data = train,
                     mtry = rf_gridsearch$bestTune[,1],
                     min.node.size = rf_gridsearch$bestTune[,3],
                     norm.votes = TRUE, proximity = TRUE)
 }
+
 
 plot(varImp(rf_gridsearch))
 (varImportance = varImp(rf_gridsearch))
