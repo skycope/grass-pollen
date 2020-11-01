@@ -50,8 +50,7 @@ out_season = filter(merged, season == "Not in season")
 
 # moving average variables
 gam_data = merged %>% 
-  select(pollen_count, ds, min_temp, max_temp, veg_index, humid, rain, wind_speed, 
-         mintemp_anom, wind_dir, fyear, season, pollen_cat) %>%
+  select(pollen_count, ds, min_temp, max_temp, veg_index, humid, rain, wind_speed, wind_dir, fyear, season, pollen_cat) %>%
   mutate(rollmean_maxtemp   = lag(rollmean(max_temp, 7, na.pad = T, align = 'right'), 1),
          #rollmean_vegindex = lag(rollmean(veg_index, 16, na.pad = T, align = 'right'), 1),
          rollmean_pollen    = lag(rollmean(pollen_count, 7, na.pad = T, align = 'right'), 1),
@@ -65,13 +64,19 @@ gam_data = merged %>%
 in_season = filter(gam_data, season == "In season")
 out_season = filter(gam_data, season == "Not in season")
 
-oneday_train = filter(gam_data, fyear != 2011)
+oneday_train = filter(gam_data, fyear != 2019)
 
 par(mfrow = c(2, 4))
 for(i in floor(seq(123, 360, length = 8))){
-oneday_test = filter(gam_data, fyear == 2011, ds == i)
+oneday_test = filter(gam_data, fyear == 2019)
 
 oneday_predict = exp(predict(model_2, newdata = oneday_test))
+plot(oneday_predict, type = 'l')
+
+cor(oneday_predict, oneday_test$pollen_count)^2
+
+lines(oneday_test$pollen_count, col = 'red')
+
 oneday_dist = MASS::rnegbin(1000, mu = oneday_predict, theta = exp(theta_est))
 
 predict_cat_1 = case_when(
