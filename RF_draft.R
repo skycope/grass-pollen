@@ -21,6 +21,16 @@ setwd("/Users/chloestipinovich/Documents/2020/Thesis Project/grass-pollen")
 # Read in data ----------
 data      = read.csv("Final_Data/data_complete.csv")
 data      = as.data.frame(data)
+names(data)
+head(data)
+
+data      = select(data, -File.Name, -Dataset, -aid, -Variance)
+data      = rename(data,  VI_count = Count, VI_minimum = Minimum, VI_maximum = Maximum,
+       VI_range = Range, VI_mean = Mean, VI_sd = Standard.Deviation,
+       VI_UQ = Upper.Quartile,VI_U1.5.IQR = Upper.1.5.IQR, VI_L1.5.IQR = Lower.1.5.IQR,
+       VI_LQ = Lower.Quartile)
+names(data)
+
 
 # Initial Plots -------
 ggplot(data, aes(x = as.Date(date), y = veg_index)) +
@@ -50,9 +60,27 @@ ggpubr::ggarrange(pollen, vi_max, ncol = 1)
 
 # Create Storage, set test year ------
 
-train = read.csv("Final_Data/train.csv", h = T)
+train      = read.csv("Final_Data/train.csv", h = T)
+train      = select(train, -File.Name, -Dataset, -aid, -Variance)
+train      = rename(train,  VI_count = Count, VI_minimum = Minimum, VI_maximum = Maximum,
+                   VI_range = Range, VI_mean = Mean, VI_sd = Standard.Deviation,
+                   VI_UQ = Upper.Quartile,VI_U1.5.IQR = Upper.1.5.IQR, VI_L1.5.IQR = Lower.1.5.IQR,
+                   VI_LQ = Lower.Quartile)
+
 validation = read.csv("Final_Data/validation.csv", h = T)
-test = read.csv("Final_Data/test.csv", h = T)
+validation = select(validation,  -Variance)
+validation = rename(validation,  VI_count = Count, VI_minimum = Minimum, VI_maximum = Maximum,
+                    VI_range = Range, VI_mean = Mean, VI_sd = Standard.Deviation,
+                    VI_UQ = Upper.Quartile,VI_U1.5.IQR = Upper.1.5.IQR, VI_L1.5.IQR = Lower.1.5.IQR,
+                    VI_LQ = Lower.Quartile)
+
+test       = read.csv("Final_Data/test.csv", h = T)
+test       = select(test, -File.Name, -Dataset, -aid, -Variance)
+test       = rename(test,  VI_count = Count, VI_minimum = Minimum, VI_maximum = Maximum,
+                    VI_range = Range, VI_mean = Mean, VI_sd = Standard.Deviation,
+                    VI_UQ = Upper.Quartile,VI_U1.5.IQR = Upper.1.5.IQR, VI_L1.5.IQR = Lower.1.5.IQR,
+                    VI_LQ = Lower.Quartile)
+
 
 models_RMSE               = matrix(NA, nrow = 5, ncol = 3)
 models_accuracy           = matrix(NA, ncol = 4, nrow = 5)
