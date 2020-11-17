@@ -198,3 +198,4 @@ cor(yhat_gbm2, y)^2
 
 plot(yhat_gbm2, type = 'l')
 lines(y, col = 'red')
+

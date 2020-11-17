@@ -90,7 +90,6 @@ predict_cat_1 = case_when(
 plot(predict_cat_1, main = paste("Actual: ", oneday_test$pollen_cat))
 }
 
-oneday_test
 
 
 plot(oneday_test$max_temp, type = 'l')
@@ -111,6 +110,9 @@ model_2 = gam(pollen_count ~ s(rollmean_pollen, bs = 'cc') + s(rollmean_maxtemp,
                 s(wind_dir) + s(rain) + s(rollmean_rain) + s(humid) + s(wind_speed) + 
                 s(rollmean_windspeed) + s(rollmean_humid), 
               family = negbin(theta_est), data = oneday_train)
+
+predict = exp(predict(model_2, oneday_test))
+predict - oneday_test
 
 AIC(model_1, model_2)
 
@@ -261,4 +263,6 @@ data.frame(oneday_predict, twoday_predict, threeday_predict, fourday_predict,
   cor() %>% 
   ggcorrplot() +
   scale_fill_gradient2(limit = c(0.87,1), low = "white", high =  "red", midpoint = 0.93)
+
+
 
