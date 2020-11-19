@@ -3,10 +3,24 @@
 # 2: runs the model
 # 3: outputs a set of predictions
 # 4: writes the predictions, which are then uploaded to github
+library(tidyverse)
+
 setwd("/Users/skycope/Documents/GitHub/grass-pollen")
 
 # Fetch pollen data from past 7 days
-pollen = read.csv('pollen_counts.csv')
+fetch_pollen = function(){
+  pollen = read.csv('https://raw.githubusercontent.com/skycope/grass-pollen/master/Workflow/pollen_counts.csv')
+  pollen = data.frame(pollen_count = c(pollen$pollen_count, rep(NA, 7)))
+  return(pollen)
+}
+
+
+# Fetch most recent veg index
+fetch_vegindex = function(){
+  vegetation = read.csv('https://raw.githubusercontent.com/skycope/grass-pollen/master/Workflow/veg_index_new.csv')
+  vegetation = data.frame(veg_index = rep(vegetation$veg_index, 14))
+  return(vegetation)
+}
 
 
 # Finally, output the predictions
