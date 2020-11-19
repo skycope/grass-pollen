@@ -81,7 +81,7 @@ pred      = function(model, data){
   }
 }
 
-test       = data[which(data$fyear=="2019"),]
+test       = data[which(data$fyear=="2018"),]
 test =  dplyr::select(test, -logvalue) %>%
   mutate(cat_lag1 = lag(pollen_cat, 1),
          cat_lag2 = lag(pollen_cat, 2),
@@ -118,14 +118,25 @@ test =  dplyr::select(test, -logvalue) %>%
     wind_dir > 100 & wind_dir < 200 ~ "dir1",
     wind_dir <= 100 | wind_dir >= 200 ~ "dir2"
   )) %>% na.omit() 
-best       = readRDS("RF_saved/4YearsTraining/Models/M3_Class.rds")
-y          = pred(best, test)
-y
 
-best2      = readRDS("RF_saved/4YearsTraining/Models/M5_Class.rds")
-y2         = pred(best2, test)
-y2
+best       = readRDS("RF_saved/3YearsTraining/Models/M5_Class.rds")
+yhat       = predict(best, test)
+acc        = pred(best, test)
+acc
 
+# How well does it perform in and out of season?
 
+yIn     = as.factor((test %>% filter(season == "In season"))$pollen_cat)
+yOut    = as.factor((test %>% filter(season == "Not in season"))$pollen_cat)
+yhatIn  = yhat[which(test$season == "In season")]
+yhatOut = yhat[which(test$season == "Not in season")]
+
+CM = confusionMatrix(table(yIn, yhatIn))
+(IN = CM$overall['Accuracy'])
+
+CM = confusionMatrix(yOut, yhatOut)
+(OUT = CM$overall['Accuracy'])
+
+confusionMatrix(table(yhat, test$pollen_cat))
 
 
