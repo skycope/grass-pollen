@@ -9,10 +9,10 @@ library(directlabels)
 # Predictions
 predictions = data.frame(day = c("Monday", "Tuesday", "Wednesday",
                                  "Thursday", "Friday", "Saturday", "Sunday"),
-                         Very_Low  = c(0.1, 0, 0.1, 0.7, 0.9, 0.4, 0.01),
-                         Low       = c(0.8, 0.1, 0.2, 0.2, 0.05, 0.3, 0.1),
+                         Very_Low  = c(0.4, 0, 0.1, 0.7, 0.9, 0.4, 0.01),
+                         Low       = c(0.45, 0.1, 0.2, 0.2, 0.05, 0.3, 0.1),
                          Moderate  = c(0.1, 0.1, 0.4, 0.05, 0.05, 0.1, 0.1),
-                         High      = c(0, 0.5, 0.2, 0.05, 0, 0.1, 0.29),
+                         High      = c(0.05, 0.5, 0.2, 0.05, 0, 0.1, 0.29),
                          Very_High = c(0, 0.3, 0.1, 0, 0, 0.1, 0.5)) %>%
   mutate(day = ordered(day, levels =  c("Monday", "Tuesday", "Wednesday",
                                     "Thursday", "Friday", "Saturday", "Sunday") ))
@@ -25,11 +25,15 @@ new = predictions %>%  rename(`Very Low` = Very_Low, `Very High` = Very_High) %>
 colours = c('#40b101', '#ffe500', '#ffa800', '#ff5801', '#aa0e00')
 
 predictions %>% rename(`Very Low` = Very_Low, `Very High` = Very_High) %>%
+  filter(day == 'Monday') %>%
   melt(id.vars = 'day') %>% ggplot(aes(x=variable, y=value, fill=variable)) +
   geom_bar(stat = 'identity', position = 'dodge', colour = 'black') + 
+  ylab("Probability") +
+  xlab("Category") +
   theme_minimal() + 
   scale_fill_manual(values = colours) +
   facet_wrap(.~ day, scales = 'free') + theme(legend.position = 'none')
+
 
 # New plot
 new %>% 
@@ -113,7 +117,47 @@ server <- function(input, output) {
   })
 }
 
+library(plotly)
+
+ui <- shinyUI(
+  fluidPage(fluidPage(
+    titlePanel("SA COVID-19 Stats"),
+    
+    sidebarLayout(sidebarPanel(
+      title = "SA COVID-19 Stats",
+      selectInput("select", "Select a Province", 
+                  choices =  c("WC", "EC", "FS", "GP", "KZN", "LP", "MP",
+                               "NC", "NW",  "Total"))),
+      
+      mainPanel(
+        plotlyOutput("Cases", width = "700", height = "300px"),
+        plotlyOutput("Deaths", width = "700", height = "300px")
+      )
+    ),
+    # WHERE YOUR FOOTER GOES
+    hr(),
+    print("Source: Data Science for Social Impact Research Group @ University of Pretoria, Coronavirus COVID-19 (2019-nCoV) Data Repository for South Africa. Available on: https://github.com/dsfsi/covid19za.")
+  )
+  ))
 
 
-shinyApp(ui, server)
+
+server <- function(input, output){
+  output$Cases <- renderPlotly({
+    q  = predictions %>% rename(`Very Low` = Very_Low, `Very High` = Very_High) %>% 
+      melt(id.vars = 'day') %>%
+      group_by(day, variable) %>%
+      ggplot(aes(x = day, y = value, fill = variable, group = variable)) +
+      geom_area(aes(fill = variable), position = 'stack', alpha = 0.8) +
+      scale_fill_manual(values = colours) +
+      ylab("Probability") +
+      xlab("Day") +
+      theme_minimal()
+    ggplotly(q)
+  })
+  
+}
+
+shinyApp(ui = ui, server = server)
+
 
