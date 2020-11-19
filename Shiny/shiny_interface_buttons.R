@@ -1,6 +1,7 @@
 # Shiny App with buttons
 
 library(shinyWidgets)
+library(shiny)
 
 # User Interface -------
 ui <- fluidPage(
