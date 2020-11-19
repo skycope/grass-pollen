@@ -34,3 +34,5 @@ predictions = data.frame(day = c("Monday", "Tuesday", "Wednesday",
 
 # write to csv
 write.csv(predictions, 'predictions.csv')
+
+
