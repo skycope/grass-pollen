@@ -11,6 +11,7 @@
   library(dplyr)
 }
 
+# Fetch past 7 days weather data & 7 days ahead forecasts
 APIrequest = function(){
   keys     = c("D93BEE3MG1DDV9HFKD4TDZ2B3","PZSMCLY0TV8WDVR85EKPBLMYQ", "94PTQDZ21VSDMHHT2XVFJK40U", "EBAR2HSG4KACLUX2B3E8XEHXU",
               "YGRJRH8DV62KZ7MAW43SQL900", "EAPTA3QB308L41LWVE35DYEYL", "HA5E9345NW0XENSZCQC5RY4WT")
@@ -30,6 +31,21 @@ APIrequest = function(){
   historical = historical %>% rename(date = Date.time, min_temp = Minimum.Temperature, max_temp = Maximum.Temperature, humid = Relative.Humidity, rain = Precipitation, wind_speed = Wind.Speed, wind_dir = Wind.Direction)
   # Combined --------
   return(as.data.frame(rbind(historical[2:8,], forecast[2:8,])))
+}
+
+# Fetch pollen data from past 7 days
+fetch_pollen = function(){
+  pollen = read.csv('https://raw.githubusercontent.com/skycope/grass-pollen/master/Workflow/pollen_counts.csv')
+  pollen = data.frame(pollen_count = c(pollen$pollen_count, rep(NA, 7)))
+  return(pollen)
+}
+
+
+# Fetch most recent veg index
+fetch_vegindex = function(){
+  vegetation = read.csv('https://raw.githubusercontent.com/skycope/grass-pollen/master/Workflow/veg_index_new.csv')
+  vegetation = data.frame(veg_index = rep(vegetation$veg_index, 14))
+  return(vegetation)
 }
 
 
