@@ -4,6 +4,7 @@
 # 3: outputs a set of predictions
 # 4: writes the predictions, which are then uploaded to github
 library(tidyverse)
+library(lubridate)
 
 setwd("/Users/skycope/Documents/GitHub/grass-pollen")
 
@@ -24,27 +25,23 @@ fetch_vegindex = function(){
 
 
 # Finally, output the predictions
+get_dates = function(){
+  dates = seq(Sys.Date() + 1, Sys.Date() + 7, by = 1)
+  return(dates)
+}
+
+
+
 predictions = data.frame(
-           day = c("Monday", "Tuesday", "Wednesday",
-                   "Thursday", "Friday", "Saturday", "Sunday"),
            Very_Low  = c(0.1, 0, 0.1, 0.7, 0.9, 0.4, 0.01),
            Low       = c(0.8, 0.1, 0.2, 0.2, 0.05, 0.3, 0.1),
            Moderate  = c(0.1, 0.1, 0.4, 0.05, 0.05, 0.1, 0.1),
            High      = c(0, 0.5, 0.2, 0.05, 0, 0.1, 0.29),
            Very_High = c(0, 0.3, 0.1, 0, 0, 0.1, 0.5)) 
 
+predictions$date = get_dates()
+predictions$day = lubridate::wday(as.Date(predictions$date), label = T, abbr = F)
+
 # write to csv
 write.csv(predictions, 'predictions.csv')
 
-install.packages('lmtest')
-library(lmtest)
-?dwtest
-runif(1)
-
-car::durbinWatsonTest(resid(ema_2))
-
-lmtest::dwtest(ema_2)
-?lmtest::dwtest
-
-acf(resid(ema_2), ylim = c(-0.1, 0.1))
-pacf(resid(ema_2))
