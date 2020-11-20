@@ -63,7 +63,7 @@ vi_max         = ggplot(data, aes(x = as.Date(date))) +
   theme_bw() +
   theme(legend.position = 'none')
 
-ggpubr::ggarrange(pollen, vi_max, ncol = 1)
+# ggpubr::ggarrange(pollen, vi_max, ncol = 1)
 
 # Create Storage, set test year ------
 
@@ -89,16 +89,25 @@ ggpubr::ggarrange(pollen, vi_max, ncol = 1)
 #                     VI_LQ = Lower.Quartile)
 
 
-train      = data[which(data$fyear=="2011"|data$fyear=="2012"|data$fyear=="2013"|data$fyear=="2014"),]
+train      = data[which(data$fyear=="2011"|data$fyear=="2012"|data$fyear=="2013"),]
 
-validation = data[which(data$fyear=="2018"),]
+validation = data[which(data$fyear=="2014"),]
+nrow(validation)
+skim(validation)
 
-test       = data[which(data$fyear=="2019"),]
+test       = data[which(data$fyear=="2018"),]
 
 models_RMSE               = matrix(NA, nrow = 5, ncol = 3)
 models_accuracy           = matrix(NA, ncol = 4, nrow = 5)
 colnames(models_RMSE)     = c("Total", "In Season", "Out of Season")
 colnames(models_accuracy) = c("Accuracy for Reg to cats", "Accuracy straight to cats", "In Season","Out of Season")
+
+
+# pdf("1 Year Counts.pdf", width=10, height=7)
+plot(validation$pollen_count, type = 'l', xlab = "Days Since 1 January",
+     ylab = "Pollen Count")
+# dev.off()
+
 
 # testYear = 2014
 
@@ -139,6 +148,10 @@ yhat           = predict(M1_Reg, validation)
 y              = validation$pollen_count
 (models_RMSE[1,1] = mean((y - yhat)^2))
 # 10.81856
+library(modeest)
+res <- residuals(naive(yhat))
+autoplot(res) + xlab("Day") + ylab("") +
+  ggtitle("Residuals from naïve method")
 
 {
   pdf("./RF_saved/4YearsTraining/Images/M1_Reg_fitted.pdf", width=10, height=7)
@@ -1071,7 +1084,7 @@ saveRDS(CM5, "RF_saved/4YearsTraining/CMs/M5_Reg_CM.rds")
                     trControl = ctrl,
                     tuneGrid = rf_grid) #Here is the grid
 }
-saveRDS(M5_Class, "RF_saved/4YearsTraining/Models/M5_Class.rds")
+saveRDS(M5_Class, "RF_saved/3YearsTraining/Models/M5_Class.rds")
 
 
 
