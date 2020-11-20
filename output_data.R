@@ -24,7 +24,8 @@ fetch_vegindex = function(){
 
 
 # Finally, output the predictions
-predictions = data.frame(day = c("Monday", "Tuesday", "Wednesday",
+predictions = data.frame(
+           day = c("Monday", "Tuesday", "Wednesday",
                    "Thursday", "Friday", "Saturday", "Sunday"),
            Very_Low  = c(0.1, 0, 0.1, 0.7, 0.9, 0.4, 0.01),
            Low       = c(0.8, 0.1, 0.2, 0.2, 0.05, 0.3, 0.1),
@@ -35,4 +36,15 @@ predictions = data.frame(day = c("Monday", "Tuesday", "Wednesday",
 # write to csv
 write.csv(predictions, 'predictions.csv')
 
+install.packages('lmtest')
+library(lmtest)
+?dwtest
+runif(1)
 
+car::durbinWatsonTest(resid(ema_2))
+
+lmtest::dwtest(ema_2)
+?lmtest::dwtest
+
+acf(resid(ema_2), ylim = c(-0.1, 0.1))
+pacf(resid(ema_2))
