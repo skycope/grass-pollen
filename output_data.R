@@ -6,7 +6,8 @@
 library(tidyverse)
 library(lubridate)
 
-setwd("/Users/skycope/Documents/GitHub/grass-pollen")
+# Set wd to be Shiny folder in GitHub folder
+setwd('/Users/skycope/Documents/GitHub/grass-pollen/Shiny')
 
 # Fetch pollen data from past 7 days
 fetch_pollen = function(){
@@ -43,5 +44,5 @@ predictions$date = get_dates()
 predictions$day = lubridate::wday(as.Date(predictions$date), label = T, abbr = F)
 
 # write to csv
-write.csv(predictions, 'predictions.csv')
+write.csv(predictions, 'predictions.csv', row.names = F)
 

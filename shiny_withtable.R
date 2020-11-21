@@ -5,26 +5,26 @@ library(tidyverse)
 library(reshape2)
 library(plotly)
 library(directlabels)
+library(reactable)
+
+
 
 # Predictions
-predictions = read.csv("https://raw.githubusercontent.com/skycope/grass-pollen/master/Workflow/predictions.csv") %>%
-  select(-X) %>%
-  mutate(day = ordered(day, levels =  c("Monday", "Tuesday", "Wednesday",
-                                        "Thursday", "Friday", "Saturday", "Sunday") ))
+predictions = read.csv("https://raw.githubusercontent.com/skycope/grass-pollen/master/Shiny/predictions.csv")  %>%
+  mutate(date = as.Date(date)) %>% rename(Date = date)
+
+predictions$Date = format(predictions$Date, "%d %b")
+predictions$day = factor(predictions$day, levels = as.character(predictions$day))
+
+
 
 new = predictions %>%  rename(`Very Low` = Very_Low, `Very High` = Very_High) %>% 
   melt(id.vars = 'day') %>% group_by(day) %>%
   mutate(probability = max(value)) %>% mutate(test = ifelse(probability == value, 1, NA)) %>% 
-  na.omit() %>%  mutate(location = "location") %>% select(-value, -test) %>% data.frame()
+  na.omit() %>%  mutate(location = "location") %>% dplyr::select(-value, -test) %>% data.frame()
 
-colours = c('#40b101', '#ffe500', '#ffa800', '#ff5801', '#aa0e00')
+colours = c('#40b101', '#b1eb36', '#ffe100', '#ffa200', '#ff4a36')
 
-predictions %>% rename(`Very Low` = Very_Low, `Very High` = Very_High) %>%
-  melt(id.vars = 'day') %>% ggplot(aes(x=variable, y=value, fill=variable)) +
-  geom_bar(stat = 'identity', position = 'dodge', colour = 'black') + 
-  theme_minimal() + 
-  scale_fill_manual(values = colours) +
-  facet_wrap(.~ day, scales = 'free') + theme(legend.position = 'none')
 
 
 
@@ -32,7 +32,8 @@ predictions %>% rename(`Very Low` = Very_Low, `Very High` = Very_High) %>%
 ui <- fluidPage(
   fluidRow(
     column(width = 12,
-           reactableOutput("table", height = 250)
+           reactableOutput("table", height = 120),
+           div(style = 'padding:20px;')
     )
   ),
   fluidRow(
@@ -43,46 +44,106 @@ ui <- fluidPage(
 )
 
 
-orders <- data.frame(
-  Order = 2300:2304,
-  Created = seq(as.Date("2019-04-01"), by = "day", length.out = 5),
-  Customer = sample(rownames(MASS::painters), 5),
-  Status = sample(c("Pending", "Paid", "Canceled"), 5, replace = TRUE)
-)
 
 
 # Server ---------
-red_pal <- function(x){
-  return(sample(c('#DA1600', '#FFDAD5', '#FFDAD5')))}
 
-plot(red_pal(3))
 
-reactable(
-  data,
-  columns = list(
-    Petal.Length = colDef(
-      style = function(value) {
-        normalized <- (value - min(data$Petal.Length)) / (max(data$Petal.Length) - min(data$Petal.Length))
-        color <- red_pal(normalized)
-        list(background = color)
-      }
-    )
-  )
-)
+risk_df = predictions  %>%
+  mutate(lowrisk = Low + Very_Low,
+         highrisk = High + Very_High,
+         medrisk = Moderate) %>%
+  mutate(`Pollen Risk` = case_when(
+    lowrisk >= medrisk & lowrisk >= highrisk ~ "Low",
+    highrisk >= medrisk & highrisk >= lowrisk ~ 'High',
+    medrisk >= highrisk & medrisk >= lowrisk ~ 'Moderate'
+  ) ) %>% dplyr::select(-lowrisk, -highrisk, -medrisk) %>% t() %>% data.frame()
 
+names(risk_df) = predictions$day
+risk_df = risk_df[8:9,]
 
 server <- function(input, output){
   
-  output$table <- renderReactable(reactable(orders, columns = list(
-    Status = colDef(cell = function(value) {
-      class <- paste0("tag status-", tolower(value))
-      htmltools::div(class = class, value)
-      
-    })
-  )))
+  output$table <- renderReactable(
+    reactable(
+      risk_df,
+      columns = list(
+        Monday = colDef(
+          style = function(risk_cat) {
+            colour =  case_when(
+              risk_cat == 'Low' ~ '#40b101',
+              risk_cat == 'Moderate' ~ '#ffa800',
+              risk_cat == 'High' ~ '#DC4130'
+            )
+            list(fontWeight = 600, color = colour)
+          }
+        ),
+        Tuesday = colDef(
+          style = function(risk_cat) {
+            colour =  case_when(
+              risk_cat == 'Low' ~ '#40b101',
+              risk_cat == 'Moderate' ~ '#ffa800',
+              risk_cat == 'High' ~ '#DC4130'
+            )
+            list(fontWeight = 600, color = colour)
+          }
+        ),
+        Wednesday = colDef(
+          style = function(risk_cat) {
+            colour =  case_when(
+              risk_cat == 'Low' ~ '#40b101',
+              risk_cat == 'Moderate' ~ '#ffa800',
+              risk_cat == 'High' ~ '#DC4130'
+            )
+            list(fontWeight = 600, color = colour)
+          }
+        ),
+        Thursday = colDef(
+          style = function(risk_cat) {
+            colour =  case_when(
+              risk_cat == 'Low' ~ '#40b101',
+              risk_cat == 'Moderate' ~ '#ffa800',
+              risk_cat == 'High' ~ '#DC4130'
+            )
+            list(fontWeight = 600, color = colour)
+          }
+        ),
+        Friday = colDef(
+          style = function(risk_cat) {
+            colour =  case_when(
+              risk_cat == 'Low' ~ '#40b101',
+              risk_cat == 'Moderate' ~ '#ffa800',
+              risk_cat == 'High' ~ '#DC4130'
+            )
+            list(fontWeight = 600, color = colour)
+          }
+        ),
+        Saturday = colDef(
+          style = function(risk_cat) {
+            colour =  case_when(
+              risk_cat == 'Low' ~ '#40b101',
+              risk_cat == 'Moderate' ~ '#ffa800',
+              risk_cat == 'High' ~ '#DC4130'
+            )
+            list(fontWeight = 600, color = colour)
+          }
+        ),
+        Sunday = colDef(
+          style = function(risk_cat) {
+            colour =  case_when(
+              risk_cat == 'Low' ~ '#40b101',
+              risk_cat == 'Moderate' ~ '#ffa800',
+              risk_cat == 'High' ~ '#DC4130'
+            )
+            list(fontWeight = 600, color = colour)
+          }
+        )
+      )
+    ))
   
   output$plot2 = renderPlotly({
     q  = predictions %>% rename(`Very Low` = Very_Low, `Very High` = Very_High) %>% 
+      dplyr::select(-date, -Date) %>%
       melt(id.vars = 'day') %>%
       group_by(day, variable) %>%
       rename(Category = variable) %>%
@@ -91,25 +152,11 @@ server <- function(input, output){
       scale_fill_manual(values = colours) +
       ylab("Probability") +
       xlab("Day") +
-      theme_minimal()     
-    ggplotly(q)
+      theme_minimal()
+    ggplotly(q) 
   })
 }
 
 # Run App ----------
 shinyApp(ui, server)
 
-reactable(
-  iris,
-  rowStyle = function(index) {
-    if (iris[index, "Sepal.Width"] > 3.5) {
-      list(fontWeight = "bold")
-    }
-  }
-)
-
-library(htmltools)
-
-  library(plotly)
-library(reactable)
-library(shiny)
