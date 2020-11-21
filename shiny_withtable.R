@@ -11,7 +11,7 @@ library(reactable)
 
 # Predictions
 predictions = read.csv("https://raw.githubusercontent.com/skycope/grass-pollen/master/Shiny/predictions.csv")  %>%
-  mutate(dates = as.Date(dates)) %>% rename(Date = dates)
+  mutate(date = as.Date(date)) %>% rename(Date = date)
 
 predictions$Date = format(predictions$Date, "%d %b")
 predictions$day = factor(predictions$day, levels = as.character(predictions$day))
