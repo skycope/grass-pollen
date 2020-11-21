@@ -7,8 +7,10 @@ library(plotly)
 library(directlabels)
 library(reactable)
 
+
+
 # Predictions
-predictions = read.csv("predictions.csv") %>%
+predictions = read.csv("https://raw.githubusercontent.com/skycope/grass-pollen/master/Shiny/predictions.csv")  %>%
   mutate(dates = as.Date(dates)) %>% rename(Date = dates)
 
 predictions$Date = format(predictions$Date, "%d %b")
