@@ -131,7 +131,14 @@ GAM_predict = function(model, day){
 }
 
 # Store Predictions
-predictions = as.data.frame()
+predictions = as.data.frame(matrix(NA, nrow = 7, ncol = 5))
+names(predictions) = c("Very_Low", "Low", "Moderate", "High", "Very_High")
+for (i in 1:7){
+  
+  day_ahead = lags(twoWeeks, c(1:(i+7)))
+  predic
+}
+  
 # Create data for one day ahead prediction
 oneDayData  = lags(twoWeeks, c(1:8))
 
