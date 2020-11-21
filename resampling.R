@@ -3,13 +3,16 @@ library(tidyverse)
 library(reshape2)
 library(mgcv)
 library(MASS)
+library(dplyr)
 
 
 # Set WD
-setwd("/Users/skycope/Documents/GitHub/grass-pollen")
+# setwd("/Users/skycope/Documents/GitHub/grass-pollen")
+setwd("/Users/chloestipinovich/Documents/2020/Thesis Project/grass-pollen")
+
 
 # Read in data
-total   = read.csv("data_complete.csv", h = T) %>% mutate(date = as.Date(date))
+total   = read.csv("Final_Data/data_complete.csv", h = T) %>% mutate(date = as.Date(date))
 
 # EMA function -----------
 EMA = function (series, n){
@@ -29,9 +32,39 @@ val = filter(total, fyear == 2018)
 test = filter(total, fyear == 2019)
   
   
-# exponential moving average variables
+# Training Set: exponential moving average variables
 ema = train %>% 
-  select(pollen_count, ds, min_temp, max_temp, veg_index, humid, rain, wind_speed, wind_dir, fyear, season, pollen_cat) %>%
+  dplyr::select(pollen_count, ds, min_temp, max_temp, veg_index, humid, rain, wind_speed, wind_dir, fyear, season, pollen_cat) %>%
+  mutate(rollmean_maxtemp   = lag(EMA(max_temp, 7), 1),
+         #rollmean_vegindex = lag(rollmean(veg_index, 16, na.pad = T, align = 'right'), 1),
+         rollmean_pollen    = lag(EMA(pollen_count, 7), 1),
+         rollmean_rain      = lag(EMA(rain, 7), 1),
+         rollmean_windspeed = lag(EMA(wind_speed, 7), 1),
+         rollmean_humid =  lag(EMA(humid, 7), 1),
+         rollmean_winddir = lag(EMA(wind_dir, 7), 1),
+         lag2_rain = lag(rain, 1),
+         lag2_pollen = lag(pollen_count, 1)) %>%
+  na.omit() %>%
+  mutate(index = 1:nrow(.))
+
+# Validation Set: exponential moving average variables
+val_ema = val %>% 
+  dplyr::select(pollen_count, ds, min_temp, max_temp, veg_index, humid, rain, wind_speed, wind_dir, fyear, season, pollen_cat) %>%
+  mutate(rollmean_maxtemp   = lag(EMA(max_temp, 7), 1),
+         #rollmean_vegindex = lag(rollmean(veg_index, 16, na.pad = T, align = 'right'), 1),
+         rollmean_pollen    = lag(EMA(pollen_count, 7), 1),
+         rollmean_rain      = lag(EMA(rain, 7), 1),
+         rollmean_windspeed = lag(EMA(wind_speed, 7), 1),
+         rollmean_humid =  lag(EMA(humid, 7), 1),
+         rollmean_winddir = lag(EMA(wind_dir, 7), 1),
+         lag2_rain = lag(rain, 1),
+         lag2_pollen = lag(pollen_count, 1)) %>%
+  na.omit() %>%
+  mutate(index = 1:nrow(.))
+
+# Test Set: exponential moving average variables
+test_ema = test %>% 
+  dplyr::select(pollen_count, ds, min_temp, max_temp, veg_index, humid, rain, wind_speed, wind_dir, fyear, season, pollen_cat) %>%
   mutate(rollmean_maxtemp   = lag(EMA(max_temp, 7), 1),
          #rollmean_vegindex = lag(rollmean(veg_index, 16, na.pad = T, align = 'right'), 1),
          rollmean_pollen    = lag(EMA(pollen_count, 7), 1),
@@ -68,8 +101,44 @@ ema_2 = gam(pollen_count ~
               s(veg_index), 
             family = negbin(theta_est), data = ema)
 
+# Set a two week period
+twoWeeks   = test[1:14,] %>% 
+                dplyr::select(pollen_count, ds, min_temp, max_temp,
+                              veg_index, humid, rain, wind_speed, wind_dir, 
+                              fyear, season)
+twoWeeks$pollen_count[8:14] = NA
+
+# Function that creates required moving averages for prediction:
+# - dat    = two week data set
+# - rng    = 8 day period, 8th day is the prediction day
+# - output = single row of data with all variables required to make prediction
+lags = function(dat, rng){
+  output = dat[rng,] %>%
+    mutate(rollmean_maxtemp   = lag(EMA(max_temp, 7), 1),
+           rollmean_pollen    = lag(EMA(pollen_count, 7), 1),
+           rollmean_rain      = lag(EMA(rain, 7), 1),
+           rollmean_windspeed = lag(EMA(wind_speed, 7), 1),
+           rollmean_humid     = lag(EMA(humid, 7), 1),
+           rollmean_winddir   = lag(EMA(wind_dir, 7), 1),
+           lag2_rain          = lag(rain, 1),
+           lag2_pollen        = lag(pollen_count, 1))
+  return(output[8,])
+}
+
+# Function that performs prediction using ema_2
+GAM_predict = function(model, day){
+  return(exp(predict(model, day)))
+}
+
+# Store Predictions
+predictions = as.data.frame()
+# Create data for one day ahead prediction
+oneDayData  = lags(twoWeeks, c(1:8))
+
+
+
 # Point prediction for one day ahead
-mean_oneday = exp(predict(ema_2, val))
+mean_oneday = exp(predict(ema_2, val_ema[1,]))
 
 # Sample from this dist 100 or so times
 oneday_dist = MASS:rnegbin(100, mu = mean_oneday, theta = theta_est)
