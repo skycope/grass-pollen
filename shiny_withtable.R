@@ -19,7 +19,7 @@ predictions$day = factor(predictions$day, levels = as.character(predictions$day)
 new = predictions %>%  rename(`Very Low` = Very_Low, `Very High` = Very_High) %>% 
   melt(id.vars = 'day') %>% group_by(day) %>%
   mutate(probability = max(value)) %>% mutate(test = ifelse(probability == value, 1, NA)) %>% 
-  na.omit() %>%  mutate(location = "location") %>% select(-value, -test) %>% data.frame()
+  na.omit() %>%  mutate(location = "location") %>% dplyr::select(-value, -test) %>% data.frame()
 
 colours = c('#40b101', '#b1eb36', '#ffe100', '#ffa200', '#ff4a36')
 
@@ -47,15 +47,18 @@ ui <- fluidPage(
 # Server ---------
 
 
-risk_df = predictions %>% group_by(day) %>% mutate(risk = High + Very_High) %>%
-  select(day, risk, Date) %>% mutate(`Pollen Risk` = case_when(
-    risk >= 0.5 ~ "High",
-    risk >= 0.3 & risk < 0.5 ~ 'Moderate',
-    risk < 0.3 ~ 'Low'
-  )) %>% select(-risk) %>% t() %>% data.frame()
+risk_df = predictions  %>%
+  mutate(lowrisk = Low + Very_Low,
+         highrisk = High + Very_High,
+         medrisk = Moderate) %>%
+  mutate(`Pollen Risk` = case_when(
+    lowrisk >= medrisk & lowrisk >= highrisk ~ "Low",
+    highrisk >= medrisk & highrisk >= lowrisk ~ 'High',
+    medrisk >= highrisk & medrisk >= lowrisk ~ 'Moderate'
+  ) ) %>% dplyr::select(-lowrisk, -highrisk, -medrisk) %>% t() %>% data.frame()
 
 names(risk_df) = predictions$day
-risk_df = risk_df[-1,]
+risk_df = risk_df[8:9,]
 
 server <- function(input, output){
   
@@ -138,7 +141,7 @@ server <- function(input, output){
   
   output$plot2 = renderPlotly({
     q  = predictions %>% rename(`Very Low` = Very_Low, `Very High` = Very_High) %>% 
-      select(-Date) %>%
+      dplyr::select(-date, -Date) %>%
       melt(id.vars = 'day') %>%
       group_by(day, variable) %>%
       rename(Category = variable) %>%

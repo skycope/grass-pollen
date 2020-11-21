@@ -43,5 +43,5 @@ predictions$date = get_dates()
 predictions$day = lubridate::wday(as.Date(predictions$date), label = T, abbr = F)
 
 # write to csv
-write.csv(predictions, 'predictions.csv')
+write.csv(predictions, 'predictions.csv', row.names = F)
 
