@@ -158,6 +158,23 @@ oneday_dist = MASS:rnegbin(100, mu = mean_oneday, theta = theta_est)
 
 # For each prediction sample one value from the 
 # negative binomial distribution around it
+mean_pollen = 20 
+theta_est = 1.5
+dist = c()
+for(i in 1:1000){
+  dist[i] = MASS::rnegbin(1000, mu = mean_pollen, theta = exp(theta_est))
+}
+
+
+predict_cat = case_when(
+  dist < 1 ~ "Very low",
+  dist >= 1 & dist < 3 ~ "Low",
+  dist >= 3 & dist < 8 ~ "Moderate",
+  dist >= 8 & dist < 14.8 ~ "High",
+  dist >= 14.8 ~ "Very high") %>%
+  ordered(., levels = c("Very low", "Low", "Moderate", "High", "Very high"))
+
+plot(predict_cat)
 
 
 
