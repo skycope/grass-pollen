@@ -1,10 +1,12 @@
 # Resampling
-library(tidyverse)
-library(reshape2)
-library(mgcv)
-library(MASS)
-library(dplyr)
 
+{
+  library(tidyverse)
+  library(reshape2)
+  library(mgcv)
+  library(MASS)
+  library(dplyr)
+}
 
 # Set WD
 # setwd("/Users/skycope/Documents/GitHub/grass-pollen")
@@ -101,7 +103,7 @@ ema_2 = gam(pollen_count ~
               s(veg_index), 
             family = negbin(theta_est), data = ema)
 
-# Set a two week period
+# Set a two week period ----------
 twoWeeks   = test[1:14,] %>% 
                 dplyr::select(pollen_count, ds, min_temp, max_temp,
                               veg_index, humid, rain, wind_speed, wind_dir, 
@@ -126,53 +128,81 @@ lags = function(dat, rng){
 }
 
 # Function that performs prediction using ema_2
+# - model = best GAM model with corresponding theta_est
+# - day   = single row of all variables needed for prediction including moving averages
 GAM_predict = function(model, day){
   return(exp(predict(model, day)))
 }
 
-# Store Predictions
-predictions = as.data.frame(matrix(NA, nrow = 7, ncol = 5))
-names(predictions) = c("Very_Low", "Low", "Moderate", "High", "Very_High")
-for (i in 1:7){
-  
-  day_ahead = lags(twoWeeks, c(1:(i+7)))
-  predic
+# Function that returns Table of frequencies
+# - pred = point estimate from day ahead prediction
+# - n    = number of samples from neg binomial
+# - table(dist_cat)/n = table of category probabilities
+freq = function(pred, n){
+  dist     = MASS::rnegbin(n, mu = pred, theta = theta_est)
+  dist_cat = case_when(
+    dist < 1 ~ "Very Low",
+    dist >= 1 & dist < 3 ~ "Low",
+    dist >= 3 & dist < 8 ~ "Moderate",
+    dist >= 8 & dist < 14.8 ~ "High",
+    dist >= 14.8 ~ "Very High") %>%
+    ordered(., levels = c("Very Low", "Low", "Moderate", "High", "Very High"))
+  return(list(freq_table = table(dist_cat)/n, samples = dist))
 }
-  
-# Create data for one day ahead prediction
-oneDayData  = lags(twoWeeks, c(1:8))
 
+# Function that returns Table of frequencies from n_sample samples
+# - dist = row of samples
+# - n    = number of samples 
+# - table(dist_cat)/n = table of category probabilities
+freq2 = function(dist, n){
+  dist_cat = case_when(
+    dist < 1 ~ "Very Low",
+    dist >= 1 & dist < 3 ~ "Low",
+    dist >= 3 & dist < 8 ~ "Moderate",
+    dist >= 8 & dist < 14.8 ~ "High",
+    dist >= 14.8 ~ "Very High") %>%
+    ordered(., levels = c("Very Low", "Low", "Moderate", "High", "Very High"))
+  return(table(dist_cat)/n)
+}
 
+# Function that returns the correct historic data for a specific sample path
+# - sample_row = sample path out of 1 to n_samples
+# - num days   = number of days forward the sample path has predicted so far 
+# - past_sample_data = two week period with specific sample path data
+past = function(sample_row, num_days){
+  past_sample_data = twoWeeks
+  for (day in 1:num_days){
+    past_sample_data$pollen_count[day+7]  = past_samples[day,sample_row]
+  }
+  return(past_sample_data)
+}
 
-# Point prediction for one day ahead
-mean_oneday = exp(predict(ema_2, val_ema[1,]))
+# Initiate Storage for Predictions
+predictions        = as.data.frame(matrix(NA, nrow = 7, ncol = 5))
+names(predictions) = c("Very_Low", "Low", "Moderate", "High", "Very_High")
+n_samples          = 10 # Set the number fo sample paths
+past_samples       = matrix(NA, ncol = n_samples, nrow = 7) # stores each of the n_sample paths for the 7 days 
 
-# Sample from this dist 100 or so times
-oneday_dist = MASS:rnegbin(100, mu = mean_oneday, theta = theta_est)
-
-# Two-day ahead predictions ----
-# Update weather variables and ds
-
-
-# Get 100 predictions for two days ahead (one prediction for each pollen)
-
-# For each prediction sample one value from the 
-# negative binomial distribution around it
-mean_pollen = 20 
-theta_est = 1.5
-
-dist = MASS::rnegbin(100, mu = mean_pollen, theta = exp(theta_est))
-
-predict_cat = case_when(
-  dist < 1 ~ "Very low",
-  dist >= 1 & dist < 3 ~ "Low",
-  dist >= 3 & dist < 8 ~ "Moderate",
-  dist >= 8 & dist < 14.8 ~ "High",
-  dist >= 14.8 ~ "Very high") %>%
-  ordered(., levels = c("Very Low", "Low", "Moderate", "High", "Very High"))
-
-plot(predict_cat)
-
+# Make 7-day-ahead predictions 
+# Update twoWeeks data set as you make a new prediction
+for (i in 1:7){
+  if (i == 1){
+    day_ahead       = lags(twoWeeks, c(i:(i+7) ) )
+    pred            = as.numeric(GAM_predict(ema_2, day_ahead))
+    results         = freq(pred, n_samples)
+    predictions[i,] = results$freq_table
+    past_samples[i,]= results$samples   # Save random samples called posterior samples
+  }
+  else{
+    for (j in 1:n_samples){
+      day_ahead          = lags(past(j,i), c(i:(i+7) ) )
+      pred               = as.numeric(GAM_predict(ema_2, day_ahead))
+      results            = freq(pred, 1)
+      past_samples[i,j]  = results$samples
+    }
+    predictions[i,]      = freq2(past_samples[i,], n_samples)
+  }
+}
 
 
 
