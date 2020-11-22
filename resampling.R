@@ -180,7 +180,7 @@ past = function(sample_row, num_days){
 # Initiate Storage for Predictions
 predictions        = as.data.frame(matrix(NA, nrow = 7, ncol = 5))
 names(predictions) = c("Very_Low", "Low", "Moderate", "High", "Very_High")
-n_samples          = 100 # Set the number fo sample paths
+n_samples          = 1000 # Set the number fo sample paths
 past_samples       = matrix(NA, ncol = n_samples, nrow = 7) # stores each of the n_sample paths for the 7 days 
 with_post          = FALSE
 
@@ -214,16 +214,24 @@ for (i in 1:7){
     twoWeeks$pollen_count[i+7] = pred
   }
 }
-
+par(mfrow=(c(2,1)))
 plot(as.numeric(predictions[1,]), type = "l")
 for(k in 2:7){
   lines(as.numeric(predictions[k,]), col = k)
 }
 
+np = c()
+for(i in 1:7){
+  np = c(np, print(var(past_samples[i,])))
+}
 
+wp = c()
+for(i in 1:7){
+  wp = c(wp, print(var(past_samples[i,])))
+}
 
-
-
+np
+wp
 
 
 
