@@ -180,28 +180,44 @@ past = function(sample_row, num_days){
 # Initiate Storage for Predictions
 predictions        = as.data.frame(matrix(NA, nrow = 7, ncol = 5))
 names(predictions) = c("Very_Low", "Low", "Moderate", "High", "Very_High")
-n_samples          = 10 # Set the number fo sample paths
+n_samples          = 100 # Set the number fo sample paths
 past_samples       = matrix(NA, ncol = n_samples, nrow = 7) # stores each of the n_sample paths for the 7 days 
+with_post          = FALSE
 
 # Make 7-day-ahead predictions 
 # Update twoWeeks data set as you make a new prediction
 for (i in 1:7){
-  if (i == 1){
+  if (with_post==TRUE){
+    if (i == 1){
+      day_ahead       = lags(twoWeeks, c(i:(i+7) ) )
+      pred            = as.numeric(GAM_predict(ema_2, day_ahead))
+      results         = freq(pred, n_samples)
+      predictions[i,] = results$freq_table
+      past_samples[i,]= results$samples   # Save random samples called posterior samples
+    }
+    else{
+      for (j in 1:n_samples){
+        day_ahead          = lags(past(j,i), c(i:(i+7) ) )
+        pred               = as.numeric(GAM_predict(ema_2, day_ahead))
+        results            = freq(pred, 1)
+        past_samples[i,j]  = results$samples
+      }
+      predictions[i,]      = freq2(past_samples[i,], n_samples)
+    }
+  }
+  if (with_post==FALSE){
     day_ahead       = lags(twoWeeks, c(i:(i+7) ) )
     pred            = as.numeric(GAM_predict(ema_2, day_ahead))
     results         = freq(pred, n_samples)
     predictions[i,] = results$freq_table
     past_samples[i,]= results$samples   # Save random samples called posterior samples
+    twoWeeks$pollen_count[i+7] = pred
   }
-  else{
-    for (j in 1:n_samples){
-      day_ahead          = lags(past(j,i), c(i:(i+7) ) )
-      pred               = as.numeric(GAM_predict(ema_2, day_ahead))
-      results            = freq(pred, 1)
-      past_samples[i,j]  = results$samples
-    }
-    predictions[i,]      = freq2(past_samples[i,], n_samples)
-  }
+}
+
+plot(as.numeric(predictions[1,]), type = "l")
+for(k in 2:7){
+  lines(as.numeric(predictions[k,]), col = k)
 }
 
 
