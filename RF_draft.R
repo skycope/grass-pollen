@@ -47,7 +47,7 @@ ggplot(data, aes(x = as.Date(date), y = veg_index)) +
   xlab("Date") +
   theme_bw()
 
-data$date = as.Date(data$date )
+data$date = as.Date(data$date)
 
 pollen         = ggplot(data, aes(x = as.Date(date))) +
   geom_line(aes(y = pollen_count), colour = 'darkblue') +
@@ -67,29 +67,7 @@ vi_max         = ggplot(data, aes(x = as.Date(date))) +
 
 # Create Storage, set test year ------
 
-# train      = read.csv("Final_Data/train.csv", h = T)
-# train      = select(train, -File.Name, -Dataset, -aid, -Variance)
-# train      = rename(train,  VI_count = Count, VI_minimum = Minimum, VI_maximum = Maximum,
-#                    VI_range = Range, VI_mean = Mean, VI_sd = Standard.Deviation,
-#                    VI_UQ = Upper.Quartile,VI_U1.5.IQR = Upper.1.5.IQR, VI_L1.5.IQR = Lower.1.5.IQR,
-#                    VI_LQ = Lower.Quartile)
-# 
-# validation = read.csv("Final_Data/validation.csv", h = T)
-# validation = select(validation,  -Variance)
-# validation = rename(validation,  VI_count = Count, VI_minimum = Minimum, VI_maximum = Maximum,
-#                     VI_range = Range, VI_mean = Mean, VI_sd = Standard.Deviation,
-#                     VI_UQ = Upper.Quartile,VI_U1.5.IQR = Upper.1.5.IQR, VI_L1.5.IQR = Lower.1.5.IQR,
-#                     VI_LQ = Lower.Quartile)
-# 
-# test       = read.csv("Final_Data/test.csv", h = T)
-# test       = select(test, -File.Name, -Dataset, -aid, -Variance)
-# test       = rename(test,  VI_count = Count, VI_minimum = Minimum, VI_maximum = Maximum,
-#                     VI_range = Range, VI_mean = Mean, VI_sd = Standard.Deviation,
-#                     VI_UQ = Upper.Quartile,VI_U1.5.IQR = Upper.1.5.IQR, VI_L1.5.IQR = Lower.1.5.IQR,
-#                     VI_LQ = Lower.Quartile)
-
-
-train      = data[which(data$fyear=="2011"|data$fyear=="2012"|data$fyear=="2013"),]
+train      = data[which(data$fyear=="2011"|data$fyear=="2012"),]
 
 validation = data[which(data$fyear=="2014"),]
 nrow(validation)
@@ -130,6 +108,7 @@ plot(validation$pollen_count, type = 'l', xlab = "Days Since 1 January",
                          method = 'ranger',
                          num.trees = 2000,
                          verbose = T,
+                         trainControl(method = "timeSlice"),
                          importance = 'impurity',
                          trControl = ctrl,
                          set.seed(2020),
